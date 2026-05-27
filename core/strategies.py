@@ -97,19 +97,25 @@ class WebPStrategy:
     ) -> tuple[int, int]:
         before = os.path.getsize(filepath)
         # Use context manager to release file handle immediately, avoiding Windows file locking.
+        temp_path = None
+        replace_needed = False
         with Image.open(filepath) as img:
             img.load()  # Force load pixel data to prevent lazy-loading file read/write collision.
-            if os.path.abspath(filepath) == os.path.abspath(output_path):
+            if os.path.normcase(os.path.abspath(filepath)) == os.path.normcase(os.path.abspath(output_path)):
                 temp_path = output_path + ".tmp"
-                try:
-                    img.save(temp_path, "WEBP", quality=quality)
-                    os.replace(temp_path, output_path)
-                except Exception as e:
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-                    raise e
+                img.save(temp_path, "WEBP", quality=quality)
+                replace_needed = True
             else:
                 img.save(output_path, "WEBP", quality=quality)
+
+        if replace_needed and temp_path:
+            try:
+                os.replace(temp_path, output_path)
+            except Exception as e:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                raise e
+
         after = os.path.getsize(output_path)
         return before, after
 
@@ -142,21 +148,27 @@ class JPEGStrategy:
         cancel_event: threading.Event | None = None,
     ) -> tuple[int, int]:
         before = os.path.getsize(filepath)
+        temp_path = None
+        replace_needed = False
         with Image.open(filepath) as img:
             img.load()
             if img.mode in ("RGBA", "P", "LA"):
                 img = img.convert("RGB")
-            if os.path.abspath(filepath) == os.path.abspath(output_path):
+            if os.path.normcase(os.path.abspath(filepath)) == os.path.normcase(os.path.abspath(output_path)):
                 temp_path = output_path + ".tmp"
-                try:
-                    img.save(temp_path, "JPEG", quality=quality)
-                    os.replace(temp_path, output_path)
-                except Exception as e:
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-                    raise e
+                img.save(temp_path, "JPEG", quality=quality)
+                replace_needed = True
             else:
                 img.save(output_path, "JPEG", quality=quality)
+
+        if replace_needed and temp_path:
+            try:
+                os.replace(temp_path, output_path)
+            except Exception as e:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                raise e
+
         after = os.path.getsize(output_path)
         return before, after
 

@@ -95,6 +95,7 @@ class ModePanel(QWidget):
             "85 is the recommended default."
         )
         self.quality_label = QLabel("85%")
+        self.quality_slider.valueChanged.connect(self._on_quality_changed)
         quality_row.addWidget(self.quality_slider)
         quality_row.addWidget(self.quality_label)
         self.default_label = QLabel("Default: 85")

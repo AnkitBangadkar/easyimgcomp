@@ -165,7 +165,7 @@ class CompressionThread(QThread):
             before, after = strategy.process(
                 filepath, output_path, self.quality, cancel_event
             )
-            if should_delete and filepath != output_path:
+            if should_delete and os.path.normcase(os.path.abspath(filepath)) != os.path.normcase(os.path.abspath(output_path)):
                 os.remove(filepath)
             return FileResult(
                 filepath=filepath, before=before, after=after, success=True

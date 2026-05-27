@@ -118,3 +118,9 @@ class MainWindow(QMainWindow):
         self.results_panel.show_results(self._results, cancelled=True)
         self.folder_list.clear_all()
         self._thread = None
+
+    def closeEvent(self, event):
+        if self._thread and self._thread.isRunning():
+            self._thread.cancel()
+            self._thread.wait()
+        event.accept()
