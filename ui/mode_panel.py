@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
-from core.strategies import Mode, get_strategy
+from core.strategies import Mode, get_strategy, _oxipng_available
 
 
 OXIPNG_SPEEDS = {
@@ -59,10 +59,16 @@ class ModePanel(QWidget):
             ("Lossy (JPEG)", Mode.JPEG),
         ]
 
+        oxipng_avail = _oxipng_available()
+
         self._mode_widgets = {}
         for label, mode in entries:
             rb = QRadioButton(label)
-            rb.setToolTip(get_strategy(mode).tooltip())
+            if mode == Mode.LOSSLESS_PNG and not oxipng_avail:
+                rb.setEnabled(False)
+                rb.setToolTip("Lossless PNG compression is unavailable because 'pyoxipng' is not installed.")
+            else:
+                rb.setToolTip(get_strategy(mode).tooltip())
             self.mode_group.addButton(rb)
             mode_row.addWidget(rb)
             self._mode_widgets[mode] = rb
@@ -89,6 +95,7 @@ class ModePanel(QWidget):
             "85 is the recommended default."
         )
         self.quality_label = QLabel("85%")
+        self.quality_slider.valueChanged.connect(self._on_quality_changed)
         quality_row.addWidget(self.quality_slider)
         quality_row.addWidget(self.quality_label)
         self.default_label = QLabel("Default: 85")
@@ -138,6 +145,9 @@ class ModePanel(QWidget):
         if is_lossless:
             self.quality_label.setText("Lossless (100%)")
             self.default_label.hide()
+        else:
+            self.quality_label.setText(f"{self.quality_slider.value()}%")
+            self.default_label.setVisible(self.quality_slider.value() != 85)
         self.quality_label.setVisible(True)
         for w in self._speed_row_widgets:
             w.setVisible(is_lossless)
